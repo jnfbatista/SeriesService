@@ -4,12 +4,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+// READ FEEDS
+using System.ServiceModel;
+using System.ServiceModel.Syndication;
+using System.Xml;
+
 namespace SeriesService
 {
     class Show
     {
 
-        #region attributes
+        #region Attributes
 
         public FrequencyValues Frequency = FrequencyValues.weekly;
 
@@ -40,8 +45,25 @@ namespace SeriesService
 
         #endregion
 
-        
 
+        /// <summary>
+        /// checks for a new episode
+        /// </summary>
+        public void CheckForNewEpisode()
+        {
+            // Read the rss
+            var reader = XmlReader.Create(URL);
+            var feed = SyndicationFeed.Load(reader);
+
+            // Check for new files
+            foreach (var item in feed.Items)
+            {
+                Console.WriteLine(item.Content);
+            }
+
+            // Download all that apply
+            Console.WriteLine("");
+        }
 
     }
 

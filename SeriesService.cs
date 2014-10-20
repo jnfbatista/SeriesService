@@ -7,10 +7,6 @@ using System.Collections;
 using System.Threading.Tasks;
 using System.Timers;
 
-// READ FEEDS
-using System.ServiceModel;
-using System.ServiceModel.Syndication;
-
 
 namespace SeriesService
 {
@@ -30,7 +26,7 @@ namespace SeriesService
         protected override void OnStart(string[] args)
         {
             // TODO: start service logic
-
+            var shows = SeriesFileLoader.LoadShowsFromFolder(args[0]);
 
             base.OnStart(args);
         }
