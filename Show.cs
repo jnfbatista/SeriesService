@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -8,6 +10,7 @@ using System.Threading.Tasks;
 using System.ServiceModel;
 using System.ServiceModel.Syndication;
 using System.Xml;
+using System.Xml.Linq;
 
 namespace SeriesService
 {
@@ -52,8 +55,16 @@ namespace SeriesService
         public void CheckForNewEpisode()
         {
             // Read the rss
-            var reader = XmlReader.Create(URL);
-            var feed = SyndicationFeed.Load(reader);
+
+            var webClient = new WebClient();
+            // hide ;-)
+            webClient.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
+            // fetch feed as string
+            var content = webClient.OpenRead(URL);
+            var contentReader = new StreamReader(content);
+            var rssFeedAsString = contentReader.ReadToEnd();
+            // convert feed to XML using LINQ to XML and finally create new XmlReader object
+            var feed = SyndicationFeed.Load(XDocument.Parse(rssFeedAsString).CreateReader());
 
             // Check for new files
             foreach (var item in feed.Items)
