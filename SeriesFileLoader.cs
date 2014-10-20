@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.IO;
 using System.Xml;
+using System.Xml.Linq;
 
 namespace SeriesService
 {
@@ -47,32 +48,35 @@ namespace SeriesService
         {
             var show = new Show();
 
-            var fileReader = XmlReader.Create(file);
-
-            while (fileReader.Read())
+            try
             {
-                if (fileReader.NodeType != XmlNodeType.Element) continue;
+                var doc = XDocument.Load(file);
 
-                switch (fileReader.Name)
+                // iterate through the XMLDocument
+                foreach (var item in doc.Root.Descendants())
                 {
-                    case "Name":
-                        fileReader.Read();
-                        show.Name = fileReader.Value;
-                        break;
-                    case "URL":
-                        fileReader.Read();
-                        show.URL = fileReader.Value;
-                        break;
-                    case "frequency":
-                        fileReader.Read();
-                        show.Frequency = FrequencyValues.weekly;
-                        break;
-                    default:
-                        break;
+                    switch (item.Name.ToString())
+                    {
+                        case "Name":
+                            show.Name = item.Value;
+                            break;
+                        case "URL":
+                            show.URL = item.Value;
+                            break;
+                        case "frequency":
+                            show.Frequency = FrequencyValues.weekly;
+                            break;
+                        default:
+                            break;
+                    }
                 }
 
-                //}
             }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+
 
             return show;
 
