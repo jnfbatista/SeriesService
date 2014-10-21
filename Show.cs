@@ -21,6 +21,11 @@ namespace SeriesService
 
         public FrequencyValues Frequency = FrequencyValues.weekly;
 
+        public Show()
+        {
+            SavePath = Directory.GetCurrentDirectory() + "\\Downloads\\";
+        }
+
         
         public string Name
         {
@@ -52,12 +57,13 @@ namespace SeriesService
         /// <summary>
         /// checks for a new episode
         /// </summary>
-        public void CheckForNewEpisode()
+        async public void CheckForNewEpisode()
         {
+
+            var downloadAll = LastDownload == DateTime.MinValue;
             // Read the rss
 
             var webClient = new WebClient();
-            // hide ;-)
             webClient.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
             // fetch feed as string
             var content = webClient.OpenRead(URL);
@@ -66,10 +72,37 @@ namespace SeriesService
             // convert feed to XML using LINQ to XML and finally create new XmlReader object
             var feed = SyndicationFeed.Load(XDocument.Parse(rssFeedAsString).CreateReader());
 
-            // Check for new files
-            foreach (var item in feed.Items)
+
+            List<SyndicationItem> downloadList;
+
+            // Reduce the set of downloads only to the desired
+            if (downloadAll)
             {
-                Console.WriteLine(item.Content);
+                downloadList = feed.Items.ToList();
+            }
+            else
+            {
+                var dList = from item in feed.Items
+                               where item.PublishDate < new DateTimeOffset(LastDownload)
+                               select item;
+
+                 downloadList = dList.ToList();
+            }
+
+            if (downloadList.Count > 0 )
+            {
+                if (!Directory.Exists(SavePath))
+                    Directory.CreateDirectory(SavePath);
+                
+            }
+
+            foreach (var item in downloadList)
+            {
+                var link = item.Links.FirstOrDefault();
+                var name = item.Id.Substring(0, item.Id.Length -1).Split('/').Last() + ".torrent";
+                Console.WriteLine(name);
+                await webClient.DownloadFileTaskAsync(new Uri(link.Uri.AbsoluteUri), SavePath + name);
+                Console.WriteLine(item.Links.FirstOrDefault().Uri.AbsoluteUri);
             }
 
             // Download all that apply
