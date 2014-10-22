@@ -34,7 +34,7 @@ namespace SeriesService
             foreach (var file in Directory.GetFiles(folder))
             {
                 // load each in a show object
-                var show = LoadXmlToShow(file);
+                var show = Show.LoadXml(file);
 
                 if (show != null)
                     shows.Add(show);
@@ -44,43 +44,7 @@ namespace SeriesService
             return shows;
         }
 
-        private static Show LoadXmlToShow(string file)
-        {
-            var show = new Show();
-
-            try
-            {
-                var doc = XDocument.Load(file);
-
-                // iterate through the XMLDocument
-                foreach (var item in doc.Root.Descendants())
-                {
-                    switch (item.Name.ToString())
-                    {
-                        case "Name":
-                            show.Name = item.Value;
-                            break;
-                        case "URL":
-                            show.URL = item.Value;
-                            break;
-                        case "frequency":
-                            show.Frequency = FrequencyValues.weekly;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-            }
-
-
-            return show;
-
-        }
+        
 
     }
 }

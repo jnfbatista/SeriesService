@@ -109,6 +109,55 @@ namespace SeriesService
             Console.WriteLine("");
         }
 
+
+        #region File IO
+        public static Show LoadXml(string file)
+        {
+            var show = new Show();
+
+            try
+            {
+                var doc = XDocument.Load(file);
+
+                // iterate through the XMLDocument
+                foreach (var item in doc.Root.Descendants())
+                {
+                    switch (item.Name.ToString())
+                    {
+                        case "Name":
+                            show.Name = item.Value;
+                            break;
+                        case "URL":
+                            show.URL = item.Value;
+                            break;
+                        case "frequency":
+                            show.Frequency = FrequencyValues.weekly;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+
+
+            return show;
+
+        }
+
+        public static void SaveToXML()
+        {
+            //var file = new XDocument(
+            //    new XElement()
+
+        }
+
+        #endregion
+
     }
 
     /// <summary>
