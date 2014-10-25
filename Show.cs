@@ -19,6 +19,8 @@ namespace SeriesService
 
         #region Attributes
 
+        public string FileName { get; set; }
+
         public FrequencyValues Frequency = FrequencyValues.weekly;
 
         public Show()
@@ -26,7 +28,7 @@ namespace SeriesService
             SavePath = Directory.GetCurrentDirectory() + "\\Downloads\\";
         }
 
-        
+
         public string Name
         {
             get;
@@ -57,7 +59,7 @@ namespace SeriesService
         /// <summary>
         /// checks for a new episode
         /// </summary>
-        async public void CheckForNewEpisode()
+        public void CheckForNewEpisode()
         {
 
             var downloadAll = LastDownload == DateTime.MinValue;
@@ -67,12 +69,14 @@ namespace SeriesService
             webClient.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
             // fetch feed as string
             var content = webClient.OpenRead(URL);
+            if (content == null) return;
+
             var contentReader = new StreamReader(content);
             var rssFeedAsString = contentReader.ReadToEnd();
             // convert feed to XML using LINQ to XML and finally create new XmlReader object
             var feed = SyndicationFeed.Load(XDocument.Parse(rssFeedAsString).CreateReader());
 
-
+            if (feed == null) return;
             List<SyndicationItem> downloadList;
 
             // Reduce the set of downloads only to the desired
@@ -83,37 +87,66 @@ namespace SeriesService
             else
             {
                 var dList = from item in feed.Items
-                               where item.PublishDate < new DateTimeOffset(LastDownload)
-                               select item;
+                            where item.PublishDate < new DateTimeOffset(LastDownload)
+                            select item;
 
-                 downloadList = dList.ToList();
+                downloadList = dList.ToList();
             }
 
-            if (downloadList.Count > 0 )
+            if (downloadList.Count > 0)
             {
                 if (!Directory.Exists(SavePath))
                     Directory.CreateDirectory(SavePath);
-                
-            }
-
-            foreach (var item in downloadList)
-            {
-                var link = item.Links.FirstOrDefault();
-                var name = item.Id.Substring(0, item.Id.Length -1).Split('/').Last() + ".torrent";
-                Console.WriteLine(name);
-                await webClient.DownloadFileTaskAsync(new Uri(link.Uri.AbsoluteUri), SavePath + name);
-                Console.WriteLine(item.Links.FirstOrDefault().Uri.AbsoluteUri);
             }
 
             // Download all that apply
-            Console.WriteLine("");
+            foreach (var item in downloadList)
+            {
+                var links = from link in item.Links
+                    select link.Uri.AbsoluteUri;
+
+                if (!links.Any()) return;
+
+                var name = item.Id.Substring(0, item.Id.Length - 1).Split('/').Last() + ".torrent";
+                Console.WriteLine(name);
+
+                DownloadFile(links.ToArray(), SavePath + name);
+
+                if (LastDownload < item.PublishDate.DateTime)
+                    LastDownload = item.PublishDate.DateTime;
+            }
+            
+            //Console.WriteLine("");
+        }
+
+        private void DownloadFile(string[] links, string filename)
+        {
+            var webClient = new WebClient();
+            webClient.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
+            foreach (var url in links)
+            {
+                try
+                {
+                    webClient.DownloadFile(new Uri(url), filename);
+
+                    return;
+                }
+                catch (WebException webException)
+                {
+                    Console.WriteLine("Message: " + webException.Message + "\nStatus:" + webException.Status);
+                }
+            }
+            
         }
 
 
         #region File IO
         public static Show LoadXml(string file)
         {
-            var show = new Show();
+            var show = new Show()
+            {
+                FileName = file
+            };
 
             try
             {
@@ -133,6 +166,9 @@ namespace SeriesService
                         case "frequency":
                             show.Frequency = FrequencyValues.weekly;
                             break;
+                        case "LastDownload":
+                            show.LastDownload = DateTime.Parse(item.Value);
+                            break;
                         default:
                             break;
                     }
@@ -149,10 +185,17 @@ namespace SeriesService
 
         }
 
-        public static void SaveToXML()
+        public void SaveToXML()
         {
-            //var file = new XDocument(
-            //    new XElement()
+            var file = new XDocument(
+                new XElement("Show",
+                    new XElement("Name", Name),
+                    new XElement("URL", URL),
+                    new XElement("LastDownload", LastDownload)
+                    ));
+
+
+            file.Save(FileName);
 
         }
 

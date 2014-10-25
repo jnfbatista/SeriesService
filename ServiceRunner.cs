@@ -13,7 +13,12 @@ namespace SeriesService
             // test file loading
             var s = SeriesFileLoader.LoadShowsFromFolder("Series");
 
+            // Download new episodes
             s.ForEach((e) => e.CheckForNewEpisode());
+
+
+            // Update files
+            s.ForEach(e => e.SaveToXML());
 
             Console.WriteLine(":P");
 
